@@ -1,295 +1,369 @@
 ---
 kind: pipeline
-name: testing
+name: test
 
 platform:
   os: linux
   arch: amd64
 
 steps:
-- name: vet
-  pull: always
-  image: golang:1.11
-  commands:
-  - go vet ./...
-  environment:
-    GO111MODULE: on
-  volumes:
-  - name: gopath
-    path: /go
+  - name: deps
+    image: golang:1.18
+    commands:
+      - make deps
+    volumes:
+      - name: godeps
+        path: /go
 
-- name: test
-  pull: always
-  image: golang:1.11
-  commands:
-  - go test -cover ./...
-  environment:
-    GO111MODULE: on
-  volumes:
-  - name: gopath
-    path: /go
+  - name: lint
+    image: golang:1.18
+    commands:
+      - make lint
+    volumes:
+      - name: godeps
+        path: /go
+
+  - name: test
+    image: golang:1.18
+    commands:
+      - make test
+    volumes:
+      - name: godeps
+        path: /go
 
 volumes:
-- name: gopath
-  temp: {}
+  - name: godeps
+    temp: {}
 
 trigger:
   ref:
-  - refs/heads/master
-  - "refs/tags/**"
-  - "refs/pull/**"
+    - refs/heads/main
+    - refs/tags/**
+    - refs/pull/**
 
 ---
 kind: pipeline
-name: linux-amd64
+name: build-binaries
 
 platform:
   os: linux
   arch: amd64
 
 steps:
-- name: build-push
-  pull: always
-  image: golang:1.11
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/linux/amd64/drone-s3-sync"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
+  - name: build
+    image: techknowlogick/xgo:go-1.18.x
+    commands:
+      - make release
 
-- name: build-tag
-  pull: always
-  image: golang:1.11
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/linux/amd64/drone-s3-sync"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-    - tag
+  - name: executable
+    image: alpine
+    commands:
+      - $(find dist/ -executable -type f -iname ${DRONE_REPO_NAME}-linux-amd64) --help
 
-- name: executable
-  pull: always
-  image: golang:1.11
-  commands:
-  - ./release/linux/amd64/drone-s3-sync --help
+  - name: changelog-generate
+    image: thegeeklab/git-chglog
+    commands:
+      - git fetch -tq
+      - git-chglog --no-color --no-emoji -o CHANGELOG.md ${DRONE_TAG:---next-tag unreleased unreleased}
 
-- name: dryrun
-  pull: always
-  image: plugins/docker:linux-amd64
-  settings:
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.amd64
-    dry_run: true
-    password:
-      from_secret: docker_password
-    repo: plugins/s3-sync
-    tags: linux-amd64
-    username:
-      from_secret: docker_username
-  when:
-    event:
-    - pull_request
+  - name: changelog-format
+    image: thegeeklab/alpine-tools
+    commands:
+      - prettier CHANGELOG.md
+      - prettier -w CHANGELOG.md
 
-- name: publish
-  pull: always
-  image: plugins/docker:linux-amd64
-  settings:
-    auto_tag: true
-    auto_tag_suffix: linux-amd64
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.amd64
-    password:
-      from_secret: docker_password
-    repo: plugins/s3-sync
-    username:
-      from_secret: docker_username
-  when:
-    event:
-      exclude:
-      - pull_request
+  - name: publish
+    image: plugins/github-release
+    settings:
+      api_key:
+        from_secret: github_token
+      files:
+        - dist/*
+      note: CHANGELOG.md
+      overwrite: true
+      title: ${DRONE_TAG}
+    when:
+      ref:
+        - refs/tags/**
 
 trigger:
   ref:
-  - refs/heads/master
-  - "refs/tags/**"
-  - "refs/pull/**"
+    - refs/heads/main
+    - refs/tags/**
+    - refs/pull/**
 
 depends_on:
-- testing
+  - test
 
 ---
 kind: pipeline
-name: linux-arm64
+name: build-container-amd64
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+  - name: build
+    image: golang:1.18
+    commands:
+      - make build
+      - ls -l dist/drone-s3-sync
+
+  - name: dryrun
+    image: thegeeklab/drone-docker:19
+    settings:
+      dockerfile: docker/Dockerfile.amd64
+      dry_run: true
+      repo: thegeeklab/${DRONE_REPO_NAME}
+    when:
+      ref:
+        - refs/pull/**
+    depends_on:
+      - build
+
+  - name: publish-dockerhub
+    image: thegeeklab/drone-docker:19
+    settings:
+      auto_tag: true
+      auto_tag_suffix: amd64
+      dockerfile: docker/Dockerfile.amd64
+      password:
+        from_secret: docker_password
+      repo: thegeeklab/${DRONE_REPO_NAME}
+      username:
+        from_secret: docker_username
+    when:
+      ref:
+        - refs/heads/main
+        - refs/tags/**
+    depends_on:
+      - dryrun
+
+  - name: publish-quay
+    image: thegeeklab/drone-docker:19
+    settings:
+      auto_tag: true
+      auto_tag_suffix: amd64
+      dockerfile: docker/Dockerfile.amd64
+      password:
+        from_secret: quay_password
+      registry: quay.io
+      repo: quay.io/thegeeklab/${DRONE_REPO_NAME}
+      username:
+        from_secret: quay_username
+    when:
+      ref:
+        - refs/heads/main
+        - refs/tags/**
+    depends_on:
+      - dryrun
+
+trigger:
+  ref:
+    - refs/heads/main
+    - refs/tags/**
+    - refs/pull/**
+
+depends_on:
+  - test
+
+---
+kind: pipeline
+name: build-container-arm64
 
 platform:
   os: linux
   arch: arm64
 
 steps:
-- name: build-push
-  pull: always
-  image: golang:1.11
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/linux/arm64/drone-s3-sync"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
+  - name: build
+    image: golang:1.18
+    commands:
+      - make build
+      - ls -l dist/drone-s3-sync
 
-- name: build-tag
-  pull: always
-  image: golang:1.11
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/linux/arm64/drone-s3-sync"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-    - tag
+  - name: dryrun
+    image: thegeeklab/drone-docker:19
+    settings:
+      dockerfile: docker/Dockerfile.arm64
+      dry_run: true
+      repo: thegeeklab/${DRONE_REPO_NAME}
+    when:
+      ref:
+        - refs/pull/**
+    depends_on:
+      - build
 
-- name: executable
-  pull: always
-  image: golang:1.11
-  commands:
-  - ./release/linux/arm64/drone-s3-sync --help
+  - name: publish-dockerhub
+    image: thegeeklab/drone-docker:19
+    settings:
+      auto_tag: true
+      auto_tag_suffix: arm64
+      dockerfile: docker/Dockerfile.arm64
+      password:
+        from_secret: docker_password
+      repo: thegeeklab/${DRONE_REPO_NAME}
+      username:
+        from_secret: docker_username
+    when:
+      ref:
+        - refs/heads/main
+        - refs/tags/**
+    depends_on:
+      - dryrun
 
-- name: dryrun
-  pull: always
-  image: plugins/docker:linux-arm64
-  settings:
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm64
-    dry_run: true
-    password:
-      from_secret: docker_password
-    repo: plugins/s3-sync
-    tags: linux-arm64
-    username:
-      from_secret: docker_username
-  when:
-    event:
-    - pull_request
-
-- name: publish
-  pull: always
-  image: plugins/docker:linux-arm64
-  settings:
-    auto_tag: true
-    auto_tag_suffix: linux-arm64
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm64
-    password:
-      from_secret: docker_password
-    repo: plugins/s3-sync
-    username:
-      from_secret: docker_username
-  when:
-    event:
-      exclude:
-      - pull_request
+  - name: publish-quay
+    image: thegeeklab/drone-docker:19
+    settings:
+      auto_tag: true
+      auto_tag_suffix: arm64
+      dockerfile: docker/Dockerfile.arm64
+      password:
+        from_secret: quay_password
+      registry: quay.io
+      repo: quay.io/thegeeklab/${DRONE_REPO_NAME}
+      username:
+        from_secret: quay_username
+    when:
+      ref:
+        - refs/heads/main
+        - refs/tags/**
+    depends_on:
+      - dryrun
 
 trigger:
   ref:
-  - refs/heads/master
-  - "refs/tags/**"
-  - "refs/pull/**"
+    - refs/heads/main
+    - refs/tags/**
+    - refs/pull/**
 
 depends_on:
-- testing
+  - test
 
 ---
 kind: pipeline
-name: linux-arm
+name: build-container-arm
 
 platform:
   os: linux
   arch: arm
 
 steps:
-- name: build-push
-  pull: always
-  image: golang:1.11
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/linux/arm/drone-s3-sync"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
+  - name: build
+    image: golang:1.18
+    commands:
+      - make build
+      - ls -l dist/drone-s3-sync
 
-- name: build-tag
-  pull: always
-  image: golang:1.11
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/linux/arm/drone-s3-sync"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-    - tag
+  - name: dryrun
+    image: thegeeklab/drone-docker:19
+    settings:
+      dockerfile: docker/Dockerfile.arm
+      dry_run: true
+      repo: thegeeklab/${DRONE_REPO_NAME}
+    when:
+      ref:
+        - refs/pull/**
+    depends_on:
+      - build
 
-- name: executable
-  pull: always
-  image: golang:1.11
-  commands:
-  - ./release/linux/arm/drone-s3-sync --help
+  - name: publish-dockerhub
+    image: thegeeklab/drone-docker:19
+    settings:
+      auto_tag: true
+      auto_tag_suffix: arm
+      dockerfile: docker/Dockerfile.arm
+      password:
+        from_secret: docker_password
+      repo: thegeeklab/${DRONE_REPO_NAME}
+      username:
+        from_secret: docker_username
+    when:
+      ref:
+        - refs/heads/main
+        - refs/tags/**
+    depends_on:
+      - dryrun
 
-- name: dryrun
-  pull: always
-  image: plugins/docker:linux-arm
-  settings:
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm
-    dry_run: true
-    password:
-      from_secret: docker_password
-    repo: plugins/s3-sync
-    tags: linux-arm
-    username:
-      from_secret: docker_username
-  when:
-    event:
-    - pull_request
-
-- name: publish
-  pull: always
-  image: plugins/docker:linux-arm
-  settings:
-    auto_tag: true
-    auto_tag_suffix: linux-arm
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm
-    password:
-      from_secret: docker_password
-    repo: plugins/s3-sync
-    username:
-      from_secret: docker_username
-  when:
-    event:
-      exclude:
-      - pull_request
+  - name: publish-quay
+    image: thegeeklab/drone-docker:19
+    settings:
+      auto_tag: true
+      auto_tag_suffix: arm
+      dockerfile: docker/Dockerfile.arm
+      password:
+        from_secret: quay_password
+      registry: quay.io
+      repo: quay.io/thegeeklab/${DRONE_REPO_NAME}
+      username:
+        from_secret: quay_username
+    when:
+      ref:
+        - refs/heads/main
+        - refs/tags/**
+    depends_on:
+      - dryrun
 
 trigger:
   ref:
-  - refs/heads/master
-  - "refs/tags/**"
-  - "refs/pull/**"
+    - refs/heads/main
+    - refs/tags/**
+    - refs/pull/**
 
 depends_on:
-- testing
+  - test
+
+---
+kind: pipeline
+name: docs
+
+platform:
+  os: linux
+  arch: amd64
+
+concurrency:
+  limit: 1
+
+steps:
+  - name: markdownlint
+    image: thegeeklab/markdownlint-cli
+    commands:
+      - markdownlint 'docs/content/**/*.md' 'README.md' 'CONTRIBUTING.md'
+
+  - name: spellcheck
+    image: node:lts-alpine
+    commands:
+      - npm install -g spellchecker-cli
+      - spellchecker --files '_docs/**/*.md' 'README.md' 'CONTRIBUTING.md' -d .dictionary -p spell indefinite-article syntax-urls --no-suggestions
+    environment:
+      FORCE_COLOR: true
+      NPM_CONFIG_LOGLEVEL: error
+
+  - name: publish
+    image: plugins/gh-pages
+    settings:
+      pages_directory: _docs/
+      password:
+        from_secret: github_token
+      target_branch: docs
+      username:
+        from_secret: github_username
+    when:
+      ref:
+        - refs/heads/main
+
+trigger:
+  ref:
+    - refs/heads/main
+    - refs/tags/**
+    - refs/pull/**
+
+depends_on:
+  - build-binaries
+  - build-container-amd64
+  - build-container-arm64
+  - build-container-arm
 
 ---
 kind: pipeline
@@ -300,33 +374,89 @@ platform:
   arch: amd64
 
 steps:
-- name: manifest
-  pull: always
-  image: plugins/manifest
-  settings:
-    auto_tag: true
-    ignore_missing: true
-    password:
-      from_secret: docker_password
-    spec: docker/manifest.tmpl
-    username:
-      from_secret: docker_username
+  - name: manifest-dockerhub
+    image: plugins/manifest
+    settings:
+      auto_tag: true
+      ignore_missing: true
+      password:
+        from_secret: docker_password
+      spec: docker/manifest.tmpl
+      username:
+        from_secret: docker_username
+    when:
+      status:
+        - success
 
-- name: microbadger
-  pull: always
-  image: plugins/webhook
-  settings:
-    urls:
-      from_secret: microbadger_url
+  - name: manifest-quay
+    image: plugins/manifest
+    settings:
+      auto_tag: true
+      ignore_missing: true
+      password:
+        from_secret: quay_password
+      spec: docker/manifest-quay.tmpl
+      username:
+        from_secret: quay_username
+    when:
+      status:
+        - success
+
+  - name: pushrm-dockerhub
+    image: chko/docker-pushrm:1
+    environment:
+      DOCKER_PASS:
+        from_secret: docker_password
+      DOCKER_USER:
+        from_secret: docker_username
+      PUSHRM_FILE: README.md
+      PUSHRM_SHORT: Drone plugin to synchronize a directory with an S3 bucket
+      PUSHRM_TARGET: thegeeklab/${DRONE_REPO_NAME}
+    when:
+      status:
+        - success
+
+  - name: pushrm-quay
+    image: chko/docker-pushrm:1
+    environment:
+      APIKEY__QUAY_IO:
+        from_secret: quay_token
+      PUSHRM_FILE: README.md
+      PUSHRM_TARGET: quay.io/thegeeklab/${DRONE_REPO_NAME}
+    when:
+      status:
+        - success
+
+  - name: matrix
+    image: thegeeklab/drone-matrix
+    settings:
+      homeserver:
+        from_secret: matrix_homeserver
+      password:
+        from_secret: matrix_password
+      roomid:
+        from_secret: matrix_roomid
+      template: "Status: **{{ build.Status }}**<br/> Build: [{{ repo.Owner }}/{{ repo.Name }}]({{ build.Link }}){{#if build.Branch}} ({{ build.Branch }}){{/if}} by {{ commit.Author }}<br/> Message: {{ commit.Message.Title }}"
+      username:
+        from_secret: matrix_username
+    when:
+      status:
+        - success
+        - failure
 
 trigger:
   ref:
-  - refs/heads/master
-  - "refs/tags/**"
+    - refs/heads/main
+    - refs/tags/**
+  status:
+    - success
+    - failure
 
 depends_on:
-- linux-amd64
-- linux-arm64
-- linux-arm
+  - docs
+
+---
+kind: signature
+hmac: dc305412e0b8b116d59630f50063f5b0a38441bf4a4e685f9bcb0e5ad9784cc7
 
 ...
