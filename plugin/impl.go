@@ -162,7 +162,7 @@ func (p *Plugin) runJobs() error {
 	results := make(chan *Result, len(p.settings.Jobs))
 	var invalidateJob *Job
 
-	logrus.Info("Synchronizing with bucket '%s'", p.settings.Bucket)
+	logrus.Infof("Synchronizing with bucket '%s'", p.settings.Bucket)
 	for _, j := range p.settings.Jobs {
 		jobChan <- struct{}{}
 		go func(j Job) {

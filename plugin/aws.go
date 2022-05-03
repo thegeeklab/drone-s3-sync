@@ -128,7 +128,7 @@ func (a *AWS) Upload(local, remote string) error {
 			return err
 		}
 
-		logrus.Debug("\"%s\" not found in bucket, uploading with Content-Type \"%s\" and permissions \"%s\"", local, contentType, access)
+		logrus.Debugf("'%s' not found in bucket, uploading with content-type '%s' and permissions '%s'", local, contentType, access)
 		putObject := &s3.PutObjectInput{
 			Bucket:      aws.String(p.settings.Bucket),
 			Key:         aws.String(remote),
@@ -157,43 +157,43 @@ func (a *AWS) Upload(local, remote string) error {
 
 	hash := md5.New()
 	_, _ = io.Copy(hash, file)
-	sum := fmt.Sprintf("\"%x\"", hash.Sum(nil))
+	sum := fmt.Sprintf("'%x'", hash.Sum(nil))
 
 	if sum == *head.ETag {
 		shouldCopy := false
 
 		if head.ContentType == nil && contentType != "" {
-			logrus.Debug("Content-Type has changed from unset to %s", contentType)
+			logrus.Debugf("content-type has changed from unset to %s", contentType)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.ContentType != nil && contentType != *head.ContentType {
-			logrus.Debug("Content-Type has changed from %s to %s", *head.ContentType, contentType)
+			logrus.Debugf("content-type has changed from %s to %s", *head.ContentType, contentType)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.ContentEncoding == nil && contentEncoding != "" {
-			logrus.Debug("Content-Encoding has changed from unset to %s", contentEncoding)
+			logrus.Debugf("Content-Encoding has changed from unset to %s", contentEncoding)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.ContentEncoding != nil && contentEncoding != *head.ContentEncoding {
-			logrus.Debug("Content-Encoding has changed from %s to %s", *head.ContentEncoding, contentEncoding)
+			logrus.Debugf("Content-Encoding has changed from %s to %s", *head.ContentEncoding, contentEncoding)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.CacheControl == nil && cacheControl != "" {
-			logrus.Debug("Cache-Control has changed from unset to %s", cacheControl)
+			logrus.Debugf("cache-control has changed from unset to %s", cacheControl)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.CacheControl != nil && cacheControl != *head.CacheControl {
-			logrus.Debug("Cache-Control has changed from %s to %s", *head.CacheControl, cacheControl)
+			logrus.Debugf("cache-control has changed from %s to %s", *head.CacheControl, cacheControl)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && len(head.Metadata) != len(metadata) {
-			logrus.Debug("Count of metadata values has changed for %s", local)
+			logrus.Debugf("count of metadata values has changed for %s", local)
 			shouldCopy = true
 		}
 
@@ -201,7 +201,7 @@ func (a *AWS) Upload(local, remote string) error {
 			for k, v := range metadata {
 				if hv, ok := head.Metadata[k]; ok {
 					if *v != *hv {
-						logrus.Debug("Metadata values have changed for %s", local)
+						logrus.Debugf("metadata values have changed for %s", local)
 						shouldCopy = true
 						break
 					}
@@ -238,17 +238,17 @@ func (a *AWS) Upload(local, remote string) error {
 			}
 
 			if previousAccess != access {
-				logrus.Debug("Permissions for \"%s\" have changed from \"%s\" to \"%s\"", remote, previousAccess, access)
+				logrus.Debugf("permissions for '%s' have changed from '%s' to '%s'", remote, previousAccess, access)
 				shouldCopy = true
 			}
 		}
 
 		if !shouldCopy {
-			logrus.Debug("Skipping \"%s\" because hashes and metadata match", local)
+			logrus.Debugf("skipping '%s' because hashes and metadata match", local)
 			return nil
 		}
 
-		logrus.Debug("Updating metadata for \"%s\" Content-Type: \"%s\", ACL: \"%s\"", local, contentType, access)
+		logrus.Debugf("updating metadata for '%s' content-type: '%s', ACL: '%s'", local, contentType, access)
 		copyObject := &s3.CopyObjectInput{
 			Bucket:            aws.String(p.settings.Bucket),
 			Key:               aws.String(remote),
@@ -281,7 +281,7 @@ func (a *AWS) Upload(local, remote string) error {
 		return err
 	}
 
-	logrus.Debug("Uploading \"%s\" with Content-Type \"%s\" and permissions \"%s\"", local, contentType, access)
+	logrus.Debugf("uploading '%s' with content-type '%s' and permissions '%s'", local, contentType, access)
 	putObject := &s3.PutObjectInput{
 		Bucket:      aws.String(p.settings.Bucket),
 		Key:         aws.String(remote),
@@ -310,7 +310,7 @@ func (a *AWS) Upload(local, remote string) error {
 
 func (a *AWS) Redirect(path, location string) error {
 	p := a.plugin
-	logrus.Debug("Adding redirect from \"%s\" to \"%s\"", path, location)
+	logrus.Debugf("adding redirect from '%s' to '%s'", path, location)
 
 	if a.plugin.settings.DryRun {
 		return nil
@@ -327,7 +327,7 @@ func (a *AWS) Redirect(path, location string) error {
 
 func (a *AWS) Delete(remote string) error {
 	p := a.plugin
-	logrus.Debug("Removing remote file \"%s\"", remote)
+	logrus.Debugf("removing remote file '%s'", remote)
 
 	if a.plugin.settings.DryRun {
 		return nil
@@ -376,7 +376,7 @@ func (a *AWS) List(path string) ([]string, error) {
 
 func (a *AWS) Invalidate(invalidatePath string) error {
 	p := a.plugin
-	logrus.Debug("Invalidating \"%s\"", invalidatePath)
+	logrus.Debugf("invalidating '%s'", invalidatePath)
 	_, err := a.cfClient.CreateInvalidation(&cloudfront.CreateInvalidationInput{
 		DistributionId: aws.String(p.settings.CloudFrontDistribution),
 		InvalidationBatch: &cloudfront.InvalidationBatch{
