@@ -14,8 +14,7 @@ Drone plugin to synchronize a directory with an S3 bucket. You can find the full
 
 ## Contributors
 
-Special thanks goes to all [contributors](https://github.com/thegeeklab/drone-s3-sync/graphs/contributors). If you would like to contribute,
-please see the [instructions](https://github.com/thegeeklab/drone-s3-sync/blob/main/CONTRIBUTING.md).
+Special thanks goes to all [contributors](https://github.com/thegeeklab/drone-s3-sync/graphs/contributors). If you would like to contribute, please see the [instructions](https://github.com/thegeeklab/drone-s3-sync/blob/main/CONTRIBUTING.md).
 
 ## License
 
