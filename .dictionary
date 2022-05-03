@@ -3,4 +3,5 @@ github
 url
 gh
 drone-s3-sync
-S3
+(s|S)3
+cloudfront
