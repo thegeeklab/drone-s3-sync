@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,7 +31,6 @@ type Settings struct {
 	Client                 AWS
 	Jobs                   []Job
 	MaxConcurrency         int
-	EnvFile                string
 }
 
 type Job struct {
@@ -66,10 +64,6 @@ func (p *Plugin) Validate() error {
 
 // Execute provides the implementation of the plugin.
 func (p *Plugin) Execute() error {
-	if p.settings.EnvFile != "" {
-		_ = godotenv.Load(p.settings.EnvFile)
-	}
-
 	p.settings.Jobs = make([]Job, 1)
 	p.settings.Client = NewAWS(p)
 

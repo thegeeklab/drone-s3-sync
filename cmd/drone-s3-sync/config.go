@@ -11,19 +11,19 @@ func settingsFlags(settings *plugin.Settings) []cli.Flag {
 		&cli.StringFlag{
 			Name:        "endpoint",
 			Usage:       "endpoint for the s3 connection",
-			EnvVars:     []string{"PLUGIN_ENDPOINT", "S3_SYNC_ENDPOINT", "S3_ENDPOINT"},
+			EnvVars:     []string{"PLUGIN_ENDPOINT", "S3_ENDPOINT"},
 			Destination: &settings.Endpoint,
 		},
 		&cli.StringFlag{
 			Name:        "access-key",
-			Usage:       "aws access key",
-			EnvVars:     []string{"PLUGIN_ACCESS_KEY", "AWS_ACCESS_KEY_ID"},
+			Usage:       "s3 access key",
+			EnvVars:     []string{"PLUGIN_ACCESS_KEY", "S3_ACCESS_KEY"},
 			Destination: &settings.AccessKey,
 		},
 		&cli.StringFlag{
 			Name:        "secret-key",
-			Usage:       "aws secret key",
-			EnvVars:     []string{"PLUGIN_SECRET_KEY", "AWS_SECRET_ACCESS_KEY"},
+			Usage:       "s3 secret key",
+			EnvVars:     []string{"PLUGIN_SECRET_KEY", "S3_SECRET_KEY"},
 			Destination: &settings.SecretKey,
 		},
 		&cli.BoolFlag{
@@ -34,13 +34,13 @@ func settingsFlags(settings *plugin.Settings) []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:        "bucket",
-			Usage:       "name of bucket",
+			Usage:       "name of the bucket",
 			EnvVars:     []string{"PLUGIN_BUCKET"},
 			Destination: &settings.Bucket,
 		},
 		&cli.StringFlag{
 			Name:        "region",
-			Usage:       "aws region",
+			Usage:       "s3 region",
 			Value:       "us-east-1",
 			EnvVars:     []string{"PLUGIN_REGION"},
 			Destination: &settings.Region,
@@ -112,11 +112,6 @@ func settingsFlags(settings *plugin.Settings) []cli.Flag {
 			Usage:       "dry run disables api calls",
 			EnvVars:     []string{"DRY_RUN", "PLUGIN_DRY_RUN"},
 			Destination: &settings.DryRun,
-		},
-		&cli.StringFlag{
-			Name:        "env-file",
-			Usage:       "source env file",
-			Destination: &settings.EnvFile,
 		},
 		&cli.IntFlag{
 			Name:        "max-concurrency",
