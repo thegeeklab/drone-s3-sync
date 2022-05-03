@@ -1,4 +1,4 @@
-package main
+package plugin
 
 import (
 	"crypto/md5"
@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudfront"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/ryanuber/go-glob"
+	"github.com/sirupsen/logrus"
 )
 
 type AWS struct {
@@ -29,18 +30,18 @@ type AWS struct {
 
 func NewAWS(p *Plugin) AWS {
 	sessCfg := &aws.Config{
-		S3ForcePathStyle: aws.Bool(p.PathStyle),
-		Region:           aws.String(p.Region),
+		S3ForcePathStyle: aws.Bool(p.settings.PathStyle),
+		Region:           aws.String(p.settings.Region),
 	}
 
-	if p.Endpoint != "" {
-		sessCfg.Endpoint = &p.Endpoint
-		sessCfg.DisableSSL = aws.Bool(strings.HasPrefix(p.Endpoint, "http://"))
+	if p.settings.Endpoint != "" {
+		sessCfg.Endpoint = &p.settings.Endpoint
+		sessCfg.DisableSSL = aws.Bool(strings.HasPrefix(p.settings.Endpoint, "http://"))
 	}
 
 	// allowing to use the instance role or provide a key and secret
-	if p.Key != "" && p.Secret != "" {
-		sessCfg.Credentials = credentials.NewStaticCredentials(p.Key, p.Secret, "")
+	if p.settings.AccessKey != "" && p.settings.SecretKey != "" {
+		sessCfg.Credentials = credentials.NewStaticCredentials(p.settings.AccessKey, p.settings.SecretKey, "")
 	}
 
 	sess, _ := session.NewSession(sessCfg)
@@ -67,9 +68,9 @@ func (a *AWS) Upload(local, remote string) error {
 	defer file.Close()
 
 	var access string
-	for pattern := range p.Access {
+	for pattern := range p.settings.Access {
 		if match := glob.Glob(pattern, local); match {
-			access = p.Access[pattern]
+			access = p.settings.Access[pattern]
 			break
 		}
 	}
@@ -81,9 +82,9 @@ func (a *AWS) Upload(local, remote string) error {
 	fileExt := filepath.Ext(local)
 
 	var contentType string
-	for patternExt := range p.ContentType {
+	for patternExt := range p.settings.ContentType {
 		if patternExt == fileExt {
-			contentType = p.ContentType[patternExt]
+			contentType = p.settings.ContentType[patternExt]
 			break
 		}
 	}
@@ -93,25 +94,25 @@ func (a *AWS) Upload(local, remote string) error {
 	}
 
 	var contentEncoding string
-	for patternExt := range p.ContentEncoding {
+	for patternExt := range p.settings.ContentEncoding {
 		if patternExt == fileExt {
-			contentEncoding = p.ContentEncoding[patternExt]
+			contentEncoding = p.settings.ContentEncoding[patternExt]
 			break
 		}
 	}
 
 	var cacheControl string
-	for pattern := range p.CacheControl {
+	for pattern := range p.settings.CacheControl {
 		if match := glob.Glob(pattern, local); match {
-			cacheControl = p.CacheControl[pattern]
+			cacheControl = p.settings.CacheControl[pattern]
 			break
 		}
 	}
 
 	metadata := map[string]*string{}
-	for pattern := range p.Metadata {
+	for pattern := range p.settings.Metadata {
 		if match := glob.Glob(pattern, local); match {
-			for k, v := range p.Metadata[pattern] {
+			for k, v := range p.settings.Metadata[pattern] {
 				metadata[k] = aws.String(v)
 			}
 			break
@@ -119,7 +120,7 @@ func (a *AWS) Upload(local, remote string) error {
 	}
 
 	head, err := a.client.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(p.Bucket),
+		Bucket: aws.String(p.settings.Bucket),
 		Key:    aws.String(remote),
 	})
 	if err != nil && err.(awserr.Error).Code() != "404" {
@@ -127,9 +128,9 @@ func (a *AWS) Upload(local, remote string) error {
 			return err
 		}
 
-		debug("\"%s\" not found in bucket, uploading with Content-Type \"%s\" and permissions \"%s\"", local, contentType, access)
+		logrus.Debugf("'%s' not found in bucket, uploading with content-type '%s' and permissions '%s'", local, contentType, access)
 		putObject := &s3.PutObjectInput{
-			Bucket:      aws.String(p.Bucket),
+			Bucket:      aws.String(p.settings.Bucket),
 			Key:         aws.String(remote),
 			Body:        file,
 			ContentType: aws.String(contentType),
@@ -146,7 +147,7 @@ func (a *AWS) Upload(local, remote string) error {
 		}
 
 		// skip upload during dry run
-		if a.plugin.DryRun {
+		if a.plugin.settings.DryRun {
 			return nil
 		}
 
@@ -156,43 +157,43 @@ func (a *AWS) Upload(local, remote string) error {
 
 	hash := md5.New()
 	_, _ = io.Copy(hash, file)
-	sum := fmt.Sprintf("\"%x\"", hash.Sum(nil))
+	sum := fmt.Sprintf("'%x'", hash.Sum(nil))
 
 	if sum == *head.ETag {
 		shouldCopy := false
 
 		if head.ContentType == nil && contentType != "" {
-			debug("Content-Type has changed from unset to %s", contentType)
+			logrus.Debugf("content-type has changed from unset to %s", contentType)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.ContentType != nil && contentType != *head.ContentType {
-			debug("Content-Type has changed from %s to %s", *head.ContentType, contentType)
+			logrus.Debugf("content-type has changed from %s to %s", *head.ContentType, contentType)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.ContentEncoding == nil && contentEncoding != "" {
-			debug("Content-Encoding has changed from unset to %s", contentEncoding)
+			logrus.Debugf("Content-Encoding has changed from unset to %s", contentEncoding)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.ContentEncoding != nil && contentEncoding != *head.ContentEncoding {
-			debug("Content-Encoding has changed from %s to %s", *head.ContentEncoding, contentEncoding)
+			logrus.Debugf("Content-Encoding has changed from %s to %s", *head.ContentEncoding, contentEncoding)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.CacheControl == nil && cacheControl != "" {
-			debug("Cache-Control has changed from unset to %s", cacheControl)
+			logrus.Debugf("cache-control has changed from unset to %s", cacheControl)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && head.CacheControl != nil && cacheControl != *head.CacheControl {
-			debug("Cache-Control has changed from %s to %s", *head.CacheControl, cacheControl)
+			logrus.Debugf("cache-control has changed from %s to %s", *head.CacheControl, cacheControl)
 			shouldCopy = true
 		}
 
 		if !shouldCopy && len(head.Metadata) != len(metadata) {
-			debug("Count of metadata values has changed for %s", local)
+			logrus.Debugf("count of metadata values has changed for %s", local)
 			shouldCopy = true
 		}
 
@@ -200,7 +201,7 @@ func (a *AWS) Upload(local, remote string) error {
 			for k, v := range metadata {
 				if hv, ok := head.Metadata[k]; ok {
 					if *v != *hv {
-						debug("Metadata values have changed for %s", local)
+						logrus.Debugf("metadata values have changed for %s", local)
 						shouldCopy = true
 						break
 					}
@@ -210,7 +211,7 @@ func (a *AWS) Upload(local, remote string) error {
 
 		if !shouldCopy {
 			grant, err := a.client.GetObjectAcl(&s3.GetObjectAclInput{
-				Bucket: aws.String(p.Bucket),
+				Bucket: aws.String(p.settings.Bucket),
 				Key:    aws.String(remote),
 			})
 			if err != nil {
@@ -237,21 +238,21 @@ func (a *AWS) Upload(local, remote string) error {
 			}
 
 			if previousAccess != access {
-				debug("Permissions for \"%s\" have changed from \"%s\" to \"%s\"", remote, previousAccess, access)
+				logrus.Debugf("permissions for '%s' have changed from '%s' to '%s'", remote, previousAccess, access)
 				shouldCopy = true
 			}
 		}
 
 		if !shouldCopy {
-			debug("Skipping \"%s\" because hashes and metadata match", local)
+			logrus.Debugf("skipping '%s' because hashes and metadata match", local)
 			return nil
 		}
 
-		debug("Updating metadata for \"%s\" Content-Type: \"%s\", ACL: \"%s\"", local, contentType, access)
+		logrus.Debugf("updating metadata for '%s' content-type: '%s', ACL: '%s'", local, contentType, access)
 		copyObject := &s3.CopyObjectInput{
-			Bucket:            aws.String(p.Bucket),
+			Bucket:            aws.String(p.settings.Bucket),
 			Key:               aws.String(remote),
-			CopySource:        aws.String(fmt.Sprintf("%s/%s", p.Bucket, remote)),
+			CopySource:        aws.String(fmt.Sprintf("%s/%s", p.settings.Bucket, remote)),
 			ACL:               aws.String(access),
 			ContentType:       aws.String(contentType),
 			Metadata:          metadata,
@@ -267,7 +268,7 @@ func (a *AWS) Upload(local, remote string) error {
 		}
 
 		// skip update if dry run
-		if a.plugin.DryRun {
+		if a.plugin.settings.DryRun {
 			return nil
 		}
 
@@ -280,9 +281,9 @@ func (a *AWS) Upload(local, remote string) error {
 		return err
 	}
 
-	debug("Uploading \"%s\" with Content-Type \"%s\" and permissions \"%s\"", local, contentType, access)
+	logrus.Debugf("uploading '%s' with content-type '%s' and permissions '%s'", local, contentType, access)
 	putObject := &s3.PutObjectInput{
-		Bucket:      aws.String(p.Bucket),
+		Bucket:      aws.String(p.settings.Bucket),
 		Key:         aws.String(remote),
 		Body:        file,
 		ContentType: aws.String(contentType),
@@ -299,7 +300,7 @@ func (a *AWS) Upload(local, remote string) error {
 	}
 
 	// skip upload if dry run
-	if a.plugin.DryRun {
+	if a.plugin.settings.DryRun {
 		return nil
 	}
 
@@ -309,14 +310,14 @@ func (a *AWS) Upload(local, remote string) error {
 
 func (a *AWS) Redirect(path, location string) error {
 	p := a.plugin
-	debug("Adding redirect from \"%s\" to \"%s\"", path, location)
+	logrus.Debugf("adding redirect from '%s' to '%s'", path, location)
 
-	if a.plugin.DryRun {
+	if a.plugin.settings.DryRun {
 		return nil
 	}
 
 	_, err := a.client.PutObject(&s3.PutObjectInput{
-		Bucket:                  aws.String(p.Bucket),
+		Bucket:                  aws.String(p.settings.Bucket),
 		Key:                     aws.String(path),
 		ACL:                     aws.String("public-read"),
 		WebsiteRedirectLocation: aws.String(location),
@@ -326,14 +327,14 @@ func (a *AWS) Redirect(path, location string) error {
 
 func (a *AWS) Delete(remote string) error {
 	p := a.plugin
-	debug("Removing remote file \"%s\"", remote)
+	logrus.Debugf("removing remote file '%s'", remote)
 
-	if a.plugin.DryRun {
+	if a.plugin.settings.DryRun {
 		return nil
 	}
 
 	_, err := a.client.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(p.Bucket),
+		Bucket: aws.String(p.settings.Bucket),
 		Key:    aws.String(remote),
 	})
 	return err
@@ -343,7 +344,7 @@ func (a *AWS) List(path string) ([]string, error) {
 	p := a.plugin
 	remote := make([]string, 1)
 	resp, err := a.client.ListObjects(&s3.ListObjectsInput{
-		Bucket: aws.String(p.Bucket),
+		Bucket: aws.String(p.settings.Bucket),
 		Prefix: aws.String(path),
 	})
 	if err != nil {
@@ -356,7 +357,7 @@ func (a *AWS) List(path string) ([]string, error) {
 
 	for *resp.IsTruncated {
 		resp, err = a.client.ListObjects(&s3.ListObjectsInput{
-			Bucket: aws.String(p.Bucket),
+			Bucket: aws.String(p.settings.Bucket),
 			Prefix: aws.String(path),
 			Marker: aws.String(remote[len(remote)-1]),
 		})
@@ -375,9 +376,9 @@ func (a *AWS) List(path string) ([]string, error) {
 
 func (a *AWS) Invalidate(invalidatePath string) error {
 	p := a.plugin
-	debug("Invalidating \"%s\"", invalidatePath)
+	logrus.Debugf("invalidating '%s'", invalidatePath)
 	_, err := a.cfClient.CreateInvalidation(&cloudfront.CreateInvalidationInput{
-		DistributionId: aws.String(p.CloudFrontDistribution),
+		DistributionId: aws.String(p.settings.CloudFrontDistribution),
 		InvalidationBatch: &cloudfront.InvalidationBatch{
 			CallerReference: aws.String(time.Now().Format(time.RFC3339Nano)),
 			Paths: &cloudfront.Paths{
