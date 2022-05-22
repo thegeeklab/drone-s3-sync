@@ -17,6 +17,32 @@ Drone plugin to synchronize a directory with an S3 bucket.
 <!-- spellchecker-enable -->
 <!-- prettier-ignore-end -->
 
+## Usage
+
+```YAML
+kind: pipeline
+name: default
+
+steps:
+  - name: sync
+    image: thegeeklab/drone-s3-sync
+    settings:
+      access_key: a50d28f4dd477bc184fbd10b376de753
+      secret_key: bc5785d3ece6a9cdefa42eb99b58986f9095ff1c
+      region: us-east-1
+      bucket: my-bucket.s3-website-us-east-1.amazonaws.com
+      source: folder/to/archive
+      target: /target/location
+```
+
+### Parameters
+
+<!-- prettier-ignore-start -->
+<!-- spellchecker-disable -->
+{{< propertylist name=drone-s3-sync >}}
+<!-- spellchecker-enable -->
+<!-- prettier-ignore-end -->
+
 ## Build
 
 Build the binary with the following command:
@@ -36,7 +62,7 @@ Build the Docker image with the following command:
 docker build --file docker/Dockerfile.amd64 --tag thegeeklab/drone-s3-sync .
 ```
 
-## Usage
+## Test
 
 ```Shell
 docker run --rm \
@@ -47,59 +73,3 @@ docker run --rm \
   -w $(pwd) \
   thegeeklab/drone-s3-sync
 ```
-
-### Parameters
-
-endpoint
-: endpoint for the s3 connection
-
-access-key
-: s3 access key
-
-secret-key
-: s3 secret key
-
-path-style
-: use path style for bucket paths
-
-bucket
-: name of the bucket
-
-region
-: s3 region (default `us-east-1`)
-
-source
-: upload source path (default `.`)
-
-target
-: target path (default `/`)
-
-delete
-: delete locally removed files from the target
-
-access
-: access control settings
-
-content-type
-: content-type settings for uploads
-
-content-encoding
-: content-encoding settings for uploads
-
-cache_control
-: cache-control settings for uploads
-
-metadata
-: additional metadata for uploads
-
-redirects
-: redirects to create
-
-cloudfront-distribution
-: id of cloudfront distribution to invalidate
-
-dry_run
-: dry run disables api calls
-
-max_concurrency
-: customize number concurrent files to process (default `100`)
