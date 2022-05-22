@@ -1,0 +1,94 @@
+---
+properties:
+  endpoint:
+    description: Endpoint for the s3 connection.
+    type: string
+    required: false
+
+  access-key:
+    description: S3 access key.
+    type: string
+    required: false
+
+  secret-key:
+    description: S3 secret key.
+    type: string
+    required: false
+
+  path-style:
+    description: Use path style for bucket paths.
+    type: bool
+    required: false
+
+  bucket:
+    description: Name of the bucket.
+    type: string
+    required: true
+
+  region:
+    description: S3 region.
+    defaultValue: us-east-1
+    type: string
+    required: false
+
+  source:
+    description: Upload source path.
+    defaultValue: .
+    type: string
+    required: false
+
+  target:
+    description: Target path.
+    defaultValue: /
+    type: string
+    required: false
+
+  delete:
+    description: Delete locally removed files from the target.
+    type: bool
+    required: false
+
+  access:
+    description: Access control settings.
+    type: map
+    required: false
+
+  content-type:
+    description: Content-type settings for uploads.
+    type: map
+    required: false
+
+  content-encoding:
+    description: Content-encoding settings for uploads.
+    type: map
+    required: false
+
+  cache_control:
+    description: Cache-control settings for uploads.
+    type: map
+    required: false
+
+  metadata:
+    description: Additional metadata for uploads.
+    type: map
+    required: false
+
+  redirects:
+    description: Redirects to create.
+    type: map
+    required: false
+
+  cloudfront-distribution:
+    description: ID of cloudfront distribution to invalidate.
+    type: string
+    required: false
+
+  dry_run:
+    description: Dry run disables API calls.
+    type: bool
+    required: false
+
+  max_concurrency:
+    description: Customize number of concurrent files to process.
+    defaultValue: 100
+    type: int
