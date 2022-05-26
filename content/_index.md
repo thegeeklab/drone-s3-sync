@@ -39,7 +39,7 @@ steps:
 
 <!-- prettier-ignore-start -->
 <!-- spellchecker-disable -->
-{{< propertylist name=drone-s3-sync >}}
+{{< propertylist name=drone-s3-sync.data >}}
 <!-- spellchecker-enable -->
 <!-- prettier-ignore-end -->
 
