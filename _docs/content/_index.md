@@ -43,6 +43,63 @@ steps:
 <!-- spellchecker-enable -->
 <!-- prettier-ignore-end -->
 
+### Examples
+
+**Customize `acl`, `content_type`, `content_encoding` or `cache_control`:**
+
+```YAML
+kind: pipeline
+name: default
+
+steps:
+  - name: sync
+    image: thegeeklab/drone-s3-sync
+    settings:
+      access_key: a50d28f4dd477bc184fbd10b376de753
+      secret_key: bc5785d3ece6a9cdefa42eb99b58986f9095ff1c
+      region: us-east-1
+      bucket: my-bucket.s3-website-us-east-1.amazonaws.com
+      source: folder/to/archive
+      target: /target/location
+      acl:
+        "public/*": public-read
+        "private/*": private
+      content_type:
+        ".svg": image/svg+xml
+      content_encoding:
+        ".js": gzip
+        ".css": gzip
+      cache_control: "public, max-age: 31536000"
+```
+
+All `map` parameters can be specified as `map` for a subset of files or as `string` for all files.
+
+- For the `acl` parameter the key must be a glob. Files without a matching rule will default to `private`.
+- For the `content_type` parameter, the key must be a file extension (including the leading dot). To apply a configuration to files without extension, the key can be set to an empty string `""`. For files without a matching rule, the content type is determined automatically.
+- For the `content_encoding` parameter, the key must be a file extension (including the leading dot). To apply a configuration to files without extension, the key can be set to an empty string `""`. For files without a matching rule, no Content Encoding header is set.
+- For the `cache_control` parameter, the key must be a file extension (including the leading dot). If you want to set cache control for files without an extension, set the key to the empty string `""`. For files without a matching rule, no Cache Control header is set.
+
+**Sync to Minio S3:**
+
+To use [Minio S3](https://docs.min.io/) its required to set `path_style: true`.
+
+```YAML
+kind: pipeline
+name: default
+
+steps:
+  - name: sync
+    image: thegeeklab/drone-s3-sync
+    settings:
+      endpoint: https://minio.example.com
+      access_key: a50d28f4dd477bc184fbd10b376de753
+      secret_key: bc5785d3ece6a9cdefa42eb99b58986f9095ff1c
+      bucket: my-bucket
+      source: folder/to/archive
+      target: /target/location
+      path_style: true
+```
+
 ## Build
 
 Build the binary with the following command:

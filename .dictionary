@@ -5,3 +5,4 @@ gh
 drone-s3-sync
 (s|S)3
 cloudfront
+Minio
