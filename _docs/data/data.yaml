@@ -48,8 +48,8 @@ properties:
     type: bool
     required: false
 
-  access:
-    description: Access control settings.
+  acl:
+    description: Access control list.
     type: map
     required: false
 

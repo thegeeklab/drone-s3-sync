@@ -67,16 +67,16 @@ func (a *AWS) Upload(local, remote string) error {
 
 	defer file.Close()
 
-	var access string
-	for pattern := range p.settings.Access {
+	var acl string
+	for pattern := range p.settings.ACL {
 		if match := glob.Glob(pattern, local); match {
-			access = p.settings.Access[pattern]
+			acl = p.settings.ACL[pattern]
 			break
 		}
 	}
 
-	if access == "" {
-		access = "private"
+	if acl == "" {
+		acl = "private"
 	}
 
 	fileExt := filepath.Ext(local)
@@ -128,13 +128,13 @@ func (a *AWS) Upload(local, remote string) error {
 			return err
 		}
 
-		logrus.Debugf("'%s' not found in bucket, uploading with content-type '%s' and permissions '%s'", local, contentType, access)
+		logrus.Debugf("'%s' not found in bucket, uploading with content-type '%s' and permissions '%s'", local, contentType, acl)
 		putObject := &s3.PutObjectInput{
 			Bucket:      aws.String(p.settings.Bucket),
 			Key:         aws.String(remote),
 			Body:        file,
 			ContentType: aws.String(contentType),
-			ACL:         aws.String(access),
+			ACL:         aws.String(acl),
 			Metadata:    metadata,
 		}
 
@@ -218,27 +218,27 @@ func (a *AWS) Upload(local, remote string) error {
 				return err
 			}
 
-			previousAccess := "private"
+			previousACL := "private"
 			for _, g := range grant.Grants {
 				gt := *g.Grantee
 				if gt.URI != nil {
 					if *gt.URI == "http://acs.amazonaws.com/groups/global/AllUsers" {
 						if *g.Permission == "READ" {
-							previousAccess = "public-read"
+							previousACL = "public-read"
 						} else if *g.Permission == "WRITE" {
-							previousAccess = "public-read-write"
+							previousACL = "public-read-write"
 						}
 					}
 					if *gt.URI == "http://acs.amazonaws.com/groups/global/AuthenticatedUsers" {
 						if *g.Permission == "READ" {
-							previousAccess = "authenticated-read"
+							previousACL = "authenticated-read"
 						}
 					}
 				}
 			}
 
-			if previousAccess != access {
-				logrus.Debugf("permissions for '%s' have changed from '%s' to '%s'", remote, previousAccess, access)
+			if previousACL != acl {
+				logrus.Debugf("permissions for '%s' have changed from '%s' to '%s'", remote, previousACL, acl)
 				shouldCopy = true
 			}
 		}
@@ -248,12 +248,12 @@ func (a *AWS) Upload(local, remote string) error {
 			return nil
 		}
 
-		logrus.Debugf("updating metadata for '%s' content-type: '%s', ACL: '%s'", local, contentType, access)
+		logrus.Debugf("updating metadata for '%s' content-type: '%s', ACL: '%s'", local, contentType, acl)
 		copyObject := &s3.CopyObjectInput{
 			Bucket:            aws.String(p.settings.Bucket),
 			Key:               aws.String(remote),
 			CopySource:        aws.String(fmt.Sprintf("%s/%s", p.settings.Bucket, remote)),
-			ACL:               aws.String(access),
+			ACL:               aws.String(acl),
 			ContentType:       aws.String(contentType),
 			Metadata:          metadata,
 			MetadataDirective: aws.String("REPLACE"),
@@ -281,13 +281,13 @@ func (a *AWS) Upload(local, remote string) error {
 		return err
 	}
 
-	logrus.Debugf("uploading '%s' with content-type '%s' and permissions '%s'", local, contentType, access)
+	logrus.Debugf("uploading '%s' with content-type '%s' and permissions '%s'", local, contentType, acl)
 	putObject := &s3.PutObjectInput{
 		Bucket:      aws.String(p.settings.Bucket),
 		Key:         aws.String(remote),
 		Body:        file,
 		ContentType: aws.String(contentType),
-		ACL:         aws.String(access),
+		ACL:         aws.String(acl),
 		Metadata:    metadata,
 	}
 

@@ -19,7 +19,7 @@ type Settings struct {
 	Source                 string
 	Target                 string
 	Delete                 bool
-	Access                 map[string]string
+	ACL                    map[string]string
 	CacheControl           map[string]string
 	ContentType            map[string]string
 	ContentEncoding        map[string]string

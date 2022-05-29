@@ -78,9 +78,9 @@ func settingsFlags(settings *plugin.Settings, category string) []cli.Flag {
 			Category:    category,
 		},
 		&cli.GenericFlag{
-			Name:     "access",
-			Usage:    "access control settings",
-			EnvVars:  []string{"PLUGIN_ACCESS", "PLUGIN_ACL"},
+			Name:     "acl",
+			Usage:    "access control list",
+			EnvVars:  []string{"PLUGIN_ACL"},
 			Value:    &StringMapFlag{},
 			Category: category,
 		},
