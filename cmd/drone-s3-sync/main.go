@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/thegeeklab/drone-plugin-lib/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/thegeeklab/drone-plugin-lib/urfave"
 	"github.com/thegeeklab/drone-s3-sync/plugin"
 	"github.com/urfave/cli/v2"
@@ -31,12 +31,12 @@ func main() {
 		Name:    "drone-s3-sync",
 		Usage:   "synchronize a directory with an S3 bucket",
 		Version: BuildVersion,
-		Flags:   append(settingsFlags(settings), urfave.Flags()...),
+		Flags:   append(settingsFlags(settings, "Plugin Flags"), urfave.Flags()...),
 		Action:  run(settings),
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		errors.HandleExit(err)
+		logrus.Fatal(err)
 	}
 }
 
@@ -58,20 +58,11 @@ func run(settings *plugin.Settings) cli.ActionFunc {
 		)
 
 		if err := plugin.Validate(); err != nil {
-			if e, ok := err.(errors.ExitCoder); ok {
-				return e
-			}
-
-			return errors.ExitMessagef("validation failed: %w", err)
+			return fmt.Errorf("validation failed: %w", err)
 		}
 
 		if err := plugin.Execute(); err != nil {
-
-			if e, ok := err.(errors.ExitCoder); ok {
-				return e
-			}
-
-			return errors.ExitMessagef("execution failed: %w", err)
+			return fmt.Errorf("execution failed: %w", err)
 		}
 
 		return nil

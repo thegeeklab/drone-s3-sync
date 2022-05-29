@@ -48,10 +48,6 @@ var MissingAwsValuesMessage = "Must set 'bucket'"
 
 // Validate handles the settings validation of the plugin.
 func (p *Plugin) Validate() error {
-	if len(p.settings.Bucket) == 0 {
-		return fmt.Errorf("no bucket name provided")
-	}
-
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("error while retrieving working directory: %w", err)
