@@ -33,7 +33,7 @@ func settingsFlags(settings *plugin.Settings, category string) []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:        "path-style",
-			Usage:       "use path style for bucket paths",
+			Usage:       "enable path style for bucket paths",
 			EnvVars:     []string{"PLUGIN_PATH_STYLE"},
 			Destination: &settings.PathStyle,
 			Category:    category,
@@ -64,7 +64,7 @@ func settingsFlags(settings *plugin.Settings, category string) []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:        "target",
-			Usage:       "target path",
+			Usage:       "upload target path",
 			Value:       "/",
 			EnvVars:     []string{"PLUGIN_TARGET"},
 			Destination: &settings.Target,
