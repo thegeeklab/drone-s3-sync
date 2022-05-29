@@ -44,7 +44,7 @@ func run(settings *plugin.Settings) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
 		urfave.LoggingFromContext(ctx)
 
-		settings.Access = ctx.Generic("access").(*StringMapFlag).Get()
+		settings.ACL = ctx.Generic("acl").(*StringMapFlag).Get()
 		settings.CacheControl = ctx.Generic("cache-control").(*StringMapFlag).Get()
 		settings.ContentType = ctx.Generic("content-type").(*StringMapFlag).Get()
 		settings.ContentEncoding = ctx.Generic("content-encoding").(*StringMapFlag).Get()
