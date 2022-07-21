@@ -10,7 +10,7 @@ Drone plugin to synchronize a directory with an S3 bucket
 [![Source: GitHub](https://img.shields.io/badge/source-github-blue.svg?logo=github&logoColor=white)](https://github.com/thegeeklab/drone-s3-sync)
 [![License: MIT](https://img.shields.io/github/license/thegeeklab/drone-s3-sync)](https://github.com/thegeeklab/drone-s3-sync/blob/main/LICENSE)
 
-Drone plugin to synchronize a directory with an S3 bucket. You can find the full documentation at You can find the full documentation at [https://drone-plugin-index.geekdocs.de](https://drone-plugin-index.geekdocs.de/plugins/drone-s3-sync).
+Drone plugin to synchronize a directory with an S3 bucket. You can find the full documentation at [https://drone-plugin-index.geekdocs.de](https://drone-plugin-index.geekdocs.de/plugins/drone-s3-sync).
 
 ## Contributors
 
