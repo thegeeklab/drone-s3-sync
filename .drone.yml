@@ -8,7 +8,7 @@ platform:
 
 steps:
   - name: deps
-    image: golang:1.18
+    image: golang:1.19
     commands:
       - make deps
     volumes:
@@ -16,7 +16,7 @@ steps:
         path: /go
 
   - name: lint
-    image: golang:1.18
+    image: golang:1.19
     commands:
       - make lint
     volumes:
@@ -24,7 +24,7 @@ steps:
         path: /go
 
   - name: test
-    image: golang:1.18
+    image: golang:1.19
     commands:
       - make test
     volumes:
@@ -51,7 +51,7 @@ platform:
 
 steps:
   - name: build
-    image: techknowlogick/xgo:go-1.18.x
+    image: techknowlogick/xgo:go-1.19.x
     commands:
       - make release
 
@@ -105,7 +105,7 @@ platform:
 
 steps:
   - name: build
-    image: golang:1.18
+    image: golang:1.19
     commands:
       - make build
       - ls -l dist/drone-s3-sync
@@ -178,7 +178,7 @@ platform:
 
 steps:
   - name: build
-    image: golang:1.18
+    image: golang:1.19
     commands:
       - make build
       - ls -l dist/drone-s3-sync
@@ -251,7 +251,7 @@ platform:
 
 steps:
   - name: build
-    image: golang:1.18
+    image: golang:1.19
     commands:
       - make build
       - ls -l dist/drone-s3-sync
@@ -456,6 +456,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: aaa9c55bd0b2e833dc58eb2aa95b36471261d6e8ddfa6165a0fe738ba73373e3
+hmac: db6f6aaea94d93b9e62552f392651928df69f8ea87ca5058e06738dd8a791cd1
 
 ...
