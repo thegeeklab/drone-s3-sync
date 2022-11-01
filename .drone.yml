@@ -58,6 +58,7 @@ steps:
   - name: executable
     image: alpine
     commands:
+      - apk --update add --no-cache libc6-compat
       - $(find dist/ -executable -type f -iname ${DRONE_REPO_NAME}-linux-amd64) --help
 
   - name: changelog-generate
@@ -456,6 +457,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: db6f6aaea94d93b9e62552f392651928df69f8ea87ca5058e06738dd8a791cd1
+hmac: e76ad8c9ff11e9e93d3e987ee2aeb8a89b41652ae851165e0fd8f3e6651e6a2c
 
 ...

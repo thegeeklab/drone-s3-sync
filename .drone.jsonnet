@@ -77,6 +77,7 @@ local PipelineBuildBinaries = {
       name: 'executable',
       image: 'alpine',
       commands: [
+        'apk --update add --no-cache libc6-compat',
         '$(find dist/ -executable -type f -iname ${DRONE_REPO_NAME}-linux-amd64) --help',
       ],
     },

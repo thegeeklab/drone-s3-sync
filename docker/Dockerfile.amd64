@@ -7,6 +7,10 @@ LABEL org.opencontainers.image.url="https://github.com/thegeeklab/drone-s3-sync"
 LABEL org.opencontainers.image.source="https://github.com/thegeeklab/drone-s3-sync"
 LABEL org.opencontainers.image.documentation="https://github.com/thegeeklab/drone-s3-sync"
 
+RUN apk --update add --no-cache libc6-compat && \
+    rm -rf /var/cache/apk/* && \
+    rm -rf /tmp/*
+
 ADD dist/drone-s3-sync /bin/
 
 ENTRYPOINT ["/bin/drone-s3-sync"]
