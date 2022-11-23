@@ -71,7 +71,6 @@ local PipelineBuildBinaries = {
       image: 'techknowlogick/xgo:go-1.19.x@sha256:b3441e1e1d2e5da281bfa8398cf70d2450d4b82464ee61eea8f0480c96edeab9',
       commands: [
         'pwd',
-        'ls -la /source',
         'make release',
       ],
     },
