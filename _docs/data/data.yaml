@@ -1,94 +1,94 @@
 ---
 properties:
-  endpoint:
+  - name: endpoint
     description: Endpoint for the s3 connection.
     type: string
     required: false
 
-  access-key:
+  - name: access-key
     description: S3 access key.
     type: string
     required: false
 
-  secret-key:
+  - name: secret-key
     description: S3 secret key.
     type: string
     required: false
 
-  path-style:
+  - name: path-style
     description: Enable path style for bucket paths.
     type: bool
     required: false
 
-  bucket:
+  - name: bucket
     description: Name of the bucket.
     type: string
     required: true
 
-  region:
+  - name: region
     description: S3 region.
     defaultValue: us-east-1
     type: string
     required: false
 
-  source:
+  - name: source
     description: Upload source path.
     defaultValue: .
     type: string
     required: false
 
-  target:
+  - name: target
     description: Upload target path.
     defaultValue: /
     type: string
     required: false
 
-  delete:
+  - name: delete
     description: Delete locally removed files from the target.
     type: bool
     required: false
 
-  acl:
+  - name: acl
     description: Access control list.
     type: map
     required: false
 
-  content-type:
+  - name: content-type
     description: Content-type settings for uploads.
     type: map
     required: false
 
-  content-encoding:
+  - name: content-encoding
     description: Content-encoding settings for uploads.
     type: map
     required: false
 
-  cache_control:
+  - name: cache_control
     description: Cache-control settings for uploads.
     type: map
     required: false
 
-  metadata:
+  - name: metadata
     description: Additional metadata for uploads.
     type: map
     required: false
 
-  redirects:
+  - name: redirects
     description: Redirects to create.
     type: map
     required: false
 
-  cloudfront-distribution:
+  - name: cloudfront-distribution
     description: ID of cloudfront distribution to invalidate.
     type: string
     required: false
 
-  dry_run:
+  - name: dry_run
     description: Dry run disables API calls.
     type: bool
     required: false
 
-  max_concurrency:
+  - name: max_concurrency
     description: Customize number of concurrent files to process.
     defaultValue: 100
     type: int
