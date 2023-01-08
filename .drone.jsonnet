@@ -243,7 +243,6 @@ local PipelineDocs = {
     'build-binaries',
     'build-container-amd64',
     'build-container-arm64',
-    'build-container-arm',
   ],
   trigger: {
     ref: ['refs/heads/main', 'refs/tags/**', 'refs/pull/**'],
@@ -347,7 +346,6 @@ local PipelineNotifications = {
   PipelineBuildBinaries,
   PipelineBuildContainer(arch='amd64'),
   PipelineBuildContainer(arch='arm64'),
-  PipelineBuildContainer(arch='arm'),
   PipelineDocs,
   PipelineNotifications,
 ]
