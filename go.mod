@@ -3,7 +3,7 @@ module github.com/thegeeklab/drone-s3-sync
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.164
+	github.com/aws/aws-sdk-go v1.44.175
 	github.com/joho/godotenv v1.4.0
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/sirupsen/logrus v1.9.0
