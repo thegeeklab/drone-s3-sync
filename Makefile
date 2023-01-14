@@ -27,7 +27,7 @@ TARGETARCH ?= amd64
 ifneq ("$(TARGETVARIANT)","")
 GOARM ?= $(subst v,,$(TARGETVARIANT))
 endif
-TAGS ?= netgo
+TAGS ?= netgo,osusergo
 
 ifndef VERSION
 	ifneq ($(DRONE_TAG),)
