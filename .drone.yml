@@ -203,14 +203,17 @@ steps:
       NPM_CONFIG_LOGLEVEL: error
 
   - name: publish
-    image: plugins/gh-pages
+    image: thegeeklab/drone-git-action
     settings:
-      pages_directory: _docs/
-      password:
+      action:
+        - pages
+      author_email: bot@thegeeklab.de
+      author_name: thegeeklab-bot
+      branch: docs
+      message: auto-update documentation
+      netrc_password:
         from_secret: github_token
-      target_branch: docs
-      username:
-        from_secret: github_username
+      pages_directory: _docs/
     when:
       ref:
         - refs/heads/main
@@ -289,6 +292,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 38b69e9112311864ea30e7b4f0f1ad30ce1b775fce21afc3deb3e652532024de
+hmac: 944cf1fa4e35a0f1a4634335ec63ed97dd0f9059d05311fd2211595a7f7626b7
 
 ...
