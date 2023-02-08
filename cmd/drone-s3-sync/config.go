@@ -134,8 +134,9 @@ func settingsFlags(settings *plugin.Settings, category string) []cli.Flag {
 			Category:    category,
 		},
 		&cli.IntFlag{
-			Name:        "max-concurrency",
-			Usage:       "customize number concurrent files to process",
+			Name:  "max-concurrency",
+			Usage: "customize number concurrent files to process",
+			//nolint:gomnd
 			Value:       100,
 			EnvVars:     []string{"PLUGIN_MAX_CONCURRENCY"},
 			Destination: &settings.MaxConcurrency,

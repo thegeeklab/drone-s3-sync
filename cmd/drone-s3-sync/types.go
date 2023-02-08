@@ -18,9 +18,11 @@ func (d *DeepStringMapFlag) Get() map[string]map[string]string {
 
 func (d *DeepStringMapFlag) Set(value string) error {
 	d.parts = map[string]map[string]string{}
+
 	err := json.Unmarshal([]byte(value), &d.parts)
 	if err != nil {
 		single := map[string]string{}
+
 		err := json.Unmarshal([]byte(value), &single)
 		if err != nil {
 			return err
@@ -46,10 +48,12 @@ func (s *StringMapFlag) Get() map[string]string {
 
 func (s *StringMapFlag) Set(value string) error {
 	s.parts = map[string]string{}
+
 	err := json.Unmarshal([]byte(value), &s.parts)
 	if err != nil {
 		s.parts["*"] = value
 	}
+
 	return nil
 }
 
@@ -67,5 +71,6 @@ func (m *MapFlag) Get() map[string]string {
 
 func (m *MapFlag) Set(value string) error {
 	m.parts = map[string]string{}
+
 	return json.Unmarshal([]byte(value), &m.parts)
 }
