@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/aws/aws-sdk-go v1.44.192
-	github.com/joho/godotenv v1.4.0
+	github.com/joho/godotenv v1.5.1
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/thegeeklab/drone-plugin-lib/v2 v2.2.1
