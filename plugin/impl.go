@@ -44,14 +44,13 @@ type Result struct {
 	err error
 }
 
-var MissingAwsValuesMessage = "Must set 'bucket'"
-
 // Validate handles the settings validation of the plugin.
 func (p *Plugin) Validate() error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("error while retrieving working directory: %w", err)
 	}
+
 	p.settings.Source = filepath.Join(wd, p.settings.Source)
 	p.settings.Target = strings.TrimPrefix(p.settings.Target, "/")
 
@@ -88,7 +87,7 @@ func (p *Plugin) createSyncJobs() error {
 		return err
 	}
 
-	local := make([]string, 1)
+	local := make([]string, 0)
 
 	err = filepath.Walk(p.settings.Source, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
@@ -122,13 +121,16 @@ func (p *Plugin) createSyncJobs() error {
 			action: "redirect",
 		})
 	}
+
 	if p.settings.Delete {
-		for _, r := range remote {
+		for _, remote := range remote {
 			found := false
-			rPath := strings.TrimPrefix(r, p.settings.Target+"/")
+			remotePath := strings.TrimPrefix(remote, p.settings.Target+"/")
+
 			for _, l := range local {
-				if l == rPath {
+				if l == remotePath {
 					found = true
+
 					break
 				}
 			}
@@ -136,7 +138,7 @@ func (p *Plugin) createSyncJobs() error {
 			if !found {
 				p.settings.Jobs = append(p.settings.Jobs, Job{
 					local:  "",
-					remote: r,
+					remote: remote,
 					action: "delete",
 				})
 			}
@@ -150,41 +152,46 @@ func (p *Plugin) runJobs() error {
 	client := p.settings.Client
 	jobChan := make(chan struct{}, p.settings.MaxConcurrency)
 	results := make(chan *Result, len(p.settings.Jobs))
+
 	var invalidateJob *Job
 
 	logrus.Infof("Synchronizing with bucket '%s'", p.settings.Bucket)
-	for _, j := range p.settings.Jobs {
+
+	for _, job := range p.settings.Jobs {
 		jobChan <- struct{}{}
-		go func(j Job) {
+
+		go func(job Job) {
 			var err error
-			switch j.action {
+
+			switch job.action {
 			case "upload":
-				err = client.Upload(j.local, j.remote)
+				err = client.Upload(job.local, job.remote)
 			case "redirect":
-				err = client.Redirect(j.local, j.remote)
+				err = client.Redirect(job.local, job.remote)
 			case "delete":
-				err = client.Delete(j.remote)
+				err = client.Delete(job.remote)
 			case "invalidateCloudFront":
-				invalidateJob = &j
+				invalidateJob = &job
 			default:
 				err = nil
 			}
-			results <- &Result{j, err}
+			results <- &Result{job, err}
+
 			<-jobChan
-		}(j)
+		}(job)
 	}
 
 	for range p.settings.Jobs {
 		r := <-results
 		if r.err != nil {
-			return fmt.Errorf("failed to %s %s to %s: %+v", r.j.action, r.j.local, r.j.remote, r.err)
+			return fmt.Errorf("failed to %s %s to %s: %w", r.j.action, r.j.local, r.j.remote, r.err)
 		}
 	}
 
 	if invalidateJob != nil {
 		err := client.Invalidate(invalidateJob.remote)
 		if err != nil {
-			return fmt.Errorf("failed to %s %s to %s: %+v", invalidateJob.action, invalidateJob.local, invalidateJob.remote, err)
+			return fmt.Errorf("failed to %s %s to %s: %w", invalidateJob.action, invalidateJob.local, invalidateJob.remote, err)
 		}
 	}
 
