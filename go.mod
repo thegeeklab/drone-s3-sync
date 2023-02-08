@@ -7,7 +7,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/thegeeklab/drone-plugin-lib/v2 v2.2.1
+	github.com/thegeeklab/drone-plugin-lib/v2 v2.3.1
 	github.com/urfave/cli/v2 v2.24.3
 )
 
@@ -16,5 +16,5 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 )
