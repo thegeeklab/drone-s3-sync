@@ -8,7 +8,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/sirupsen/logrus v1.9.2
 	github.com/thegeeklab/drone-plugin-lib/v2 v2.3.3
-	github.com/urfave/cli/v2 v2.25.4
+	github.com/urfave/cli/v2 v2.25.5
 )
 
 require (
