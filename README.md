@@ -1,6 +1,6 @@
 # drone-s3-sync
 
-Drone plugin to synchronize a directory with an S3 bucket
+DISCONTINUED: Drone plugin to synchronize a directory with an S3 bucket
 
 [![Build Status](https://img.shields.io/drone/build/thegeeklab/drone-s3-sync?logo=drone&server=https%3A%2F%2Fdrone.thegeeklab.de)](https://drone.thegeeklab.de/thegeeklab/drone-s3-sync)
 [![Docker Hub](https://img.shields.io/badge/dockerhub-latest-blue.svg?logo=docker&logoColor=white)](https://hub.docker.com/r/thegeeklab/drone-s3-sync)
@@ -9,6 +9,8 @@ Drone plugin to synchronize a directory with an S3 bucket
 [![GitHub contributors](https://img.shields.io/github/contributors/thegeeklab/drone-s3-sync)](https://github.com/thegeeklab/drone-s3-sync/graphs/contributors)
 [![Source: GitHub](https://img.shields.io/badge/source-github-blue.svg?logo=github&logoColor=white)](https://github.com/thegeeklab/drone-s3-sync)
 [![License: MIT](https://img.shields.io/github/license/thegeeklab/drone-s3-sync)](https://github.com/thegeeklab/drone-s3-sync/blob/main/LICENSE)
+
+> **DISCONTINUED:** As I don't use Drone CI anymore, this project is unmaintained. If you are interested in a free and open source CI system check out [Woodpecker CI](https://woodpecker-ci.org/).
 
 Drone plugin to synchronize a directory with an S3 bucket. You can find the full documentation at [https://drone-plugin-index.geekdocs.de](https://drone-plugin-index.geekdocs.de/plugins/drone-s3-sync).
 
